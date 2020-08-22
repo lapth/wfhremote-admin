@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WFHRemote - Home</title>
+    <link rel='stylesheet' href='/stylesheets/w3.css'/>
+    <link rel='stylesheet' href='/stylesheets/fontawesome/css/all.css'/>
+</head>
+
+<body>
+    <div class="w3-display-middle">
+        <h2>Welcome: <%= name %></h2>
+
+        <div class="w3-panel w3-pale-yellow w3-border">
+            <h3>App message!</h3>
+            <p><%= message %></p>
+        </div>
+
+        <h3>What do you want to do?</h3>
+        
+        <form action="/initrepos" method="POST">
+            <button class="w3-button w3-green w3-round-large w3-xlarge">Init Repository</button>
+        </form>
+
+        </br>
+        <form action="/delete" method="post">
+            <button class="w3-button w3-red w3-round-large w3-xlarge">Delete Repository</button>
+        </form>
+
+        </br>
+        <form action="/restart" method="post">
+            <button class="w3-button w3-blue w3-round-large w3-xlarge">Restart PC Network</button>
+        </form>
+
+        </br>
+        <form action="/restartpc" method="post">
+            <button class="w3-button w3-orange w3-round-large w3-xlarge">Restart Computer</button>
+        </form>
+
+        </br>
+        <form action="/cleanflag" method="post">
+            <button class="w3-button w3-teal w3-round-large w3-xlarge">Clean Flag</button>
+        </form>
+    </div>
+</body>
+</html>
