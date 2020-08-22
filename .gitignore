@@ -11,8 +11,7 @@
 /dist
 /logs
 /tmp
-/config
-/local
+*.local*
 
 # misc
 .DS_Store
