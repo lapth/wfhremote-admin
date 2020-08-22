@@ -2,10 +2,10 @@ var express = require("express");
 var axios = require("axios");
 var router = express.Router();
 
-const clientID = "<clientID>";
-const clientSecret = "<clientSecret>";
-const reposName = 'wfhremote';
-const controler = 'controller';
+const clientID = APPCONFIG.clientID;
+const clientSecret = APPCONFIG.clientSecret;
+const reposName = APPCONFIG.reposName;
+const controller = APPCONFIG.controller;
 
 /* GET home page. */
 router.get("/", function (req, res) {
@@ -16,35 +16,36 @@ router.get("/home", (req, res) => {
 
     console.log('Retrieving access token!');
 
-    const requestToken = req.query.code;
+    const cbCode = req.query.code;
+    if (!cbCode) return res.render('index');
 
     axios({
         method: "post",
-        url: `https://github.com/login/oauth/access_token?client_id=${clientID}&client_secret=${clientSecret}&code=${requestToken}`,
+        url: `https://github.com/login/oauth/access_token?client_id=${clientID}&client_secret=${clientSecret}&code=${cbCode}`,
         headers: {
-        accept: "application/json",
+            accept: "application/json",
         },
     }).then((response) => {
 
         console.log('Retrieving user information!');
 
-        // console.log(response.data);
         const accessToken = response.data.access_token;
         let sess = req.session;
         sess.accessToken = accessToken;
 
         axios({
-        method: "get",
-        url: "https://api.github.com/user",
-        headers: {
-            accept: "application/json",
-            Authorization: "token " + accessToken,
-        },
+            method: "get",
+            url: "https://api.github.com/user",
+            headers: {
+                accept: "application/json",
+                Authorization: "token " + accessToken,
+            },
         }).then((userRes) => {
             // Store user information
             sess.userData = userRes.data;
-            console.log(userRes.data);
-            res.render("home", { name: sess.userData.name, message: 'Have a good day!' });
+            return gotoHome(req, res, {
+                message: `Have a good day!`,
+            });
         });
     });
 });
@@ -56,7 +57,8 @@ router.post("/initrepos", (req, res) => {
 
     let sess = req.session;
     const access_token = sess.accessToken;
-    if (!access_token) res.send("Please login first");
+    
+    if (!validateRest(req, res)) return;
 
     // Step 1: inititalize the repository
     axios({
@@ -80,7 +82,7 @@ router.post("/initrepos", (req, res) => {
         // Create the controller file
         axios({
             method: "put",
-            url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controler}`,
+            url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controller}`,
             // Set the content type header, so that we get the response in JSON
             headers: {
                 accept: "application/json",
@@ -91,22 +93,20 @@ router.post("/initrepos", (req, res) => {
                 "content": Buffer.from("0").toString('base64')
             },
         }).then((response) => {
-            res.render("home", {
-                name: sess.userData.name,
-                message: `Initialized ${reposName} repository. Please replace the the account Id with your own: ${sess.userData.login}`,
+            return gotoHome(req, res, {
+                message: `Initialized ${reposName} repository.`,
+                message1: `Please replace the the <git_account_Id> in <C:\\SyncVPNStatus.ps1> with your own: ${sess.userData.login}`,
             });
         }).catch(err => {
             console.log(err);
-            res.render("home", {
-                name: sess.userData.name,
-                message: `Can not create file`,
+            return gotoHome(req, res, {
+                message: `Error during initializing ${reposName} repository!`,
             });
         });
     }).catch((err) => {
         console.log(err);
-        res.render("home", {
-            name: sess.userData.name,
-            message: `Error during initializing ${reposName} repository`,
+        return gotoHome(req, res, {
+            message: `Error during initializing ${reposName} repository!`,
         });
     });
 });
@@ -117,8 +117,9 @@ router.post("/delete", (req, res) => {
 
     let sess = req.session;
     const access_token = sess.accessToken;
-    if (!access_token) res.send("Please login first");
-  
+    
+    if (!validateRest(req, res)) return;
+
     axios({
         method: "delete",
         url: `https://api.github.com/repos/${sess.userData.login}/${reposName}`,
@@ -126,15 +127,13 @@ router.post("/delete", (req, res) => {
             Authorization: "token " + access_token,
         },
     }).then((response) => {
-        res.render("home", { 
-            name: sess.userData.name, 
-            message: `Deleted ${reposName} repository`
+        return gotoHome(req, res, {
+            message: `Deleted ${reposName} repository!`,
         });
     }).catch((err) => {
         console.log(err);
-        res.render("home", {
-            name: sess.userData.name,
-            message: `Can not delete ${reposName} repository`,
+        return gotoHome(req, res, {
+            message: `Can not delete ${reposName} repository!`,
         });
     });
 });
@@ -145,10 +144,12 @@ router.post("/restart", (req, res) => {
 
     let sess = req.session;
     const access_token = sess.accessToken;
-    if (!access_token) res.send("Please login first");
+    
+    if (!validateRest(req, res)) return;
+
     axios({
         method: "get",
-        url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controler}`,
+        url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controller}`,
         headers: {
             Authorization: "token " + access_token,
         },
@@ -160,7 +161,7 @@ router.post("/restart", (req, res) => {
 
         axios({
             method: "put",
-            url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controler}`,
+            url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controller}`,
             // Set the content type header, so that we get the response in JSON
             headers: {
                 accept: "application/json",
@@ -172,23 +173,20 @@ router.post("/restart", (req, res) => {
                 "sha": fileData.sha,
             },
         }).then((updateRes) => {
-            res.render("home", {
-                name: sess.userData.name,
-                message: `Network will restart after 5 minutes`,
+            return gotoHome(req, res, {
+                message: `Network will be restarted after 5 minutes!`,
             });
         }).catch(err => {
             console.log(err);
-            res.render("home", {
-                name: sess.userData.name,
-                message: `Fail to update restart network flag`,
+            return gotoHome(req, res, {
+                message: `Fail to restart network!`,
             });
         });
 
     }).catch(err => {
         console.log(err);
-        res.render("home", {
-            name: sess.userData.name,
-            message: `Fail to update restart network flag`,
+        return gotoHome(req, res, {
+            message: `Fail to restart network!`,
         });
     });
 });
@@ -199,11 +197,12 @@ router.post("/restartpc", (req, res) => {
 
     let sess = req.session;
     const access_token = sess.accessToken;
-    if (!access_token) res.send("Please login first");
+    
+    if (!validateRest(req, res)) return;
 
     axios({
         method: "get",
-        url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controler}`,
+        url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controller}`,
         headers: {
             Authorization: "token " + access_token,
         },
@@ -215,7 +214,7 @@ router.post("/restartpc", (req, res) => {
 
         axios({
             method: "put",
-            url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controler}`,
+            url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controller}`,
             // Set the content type header, so that we get the response in JSON
             headers: {
                 accept: "application/json",
@@ -227,23 +226,20 @@ router.post("/restartpc", (req, res) => {
                 "sha": fileData.sha,
             },
         }).then((updateRes) => {
-            res.render("home", {
-                name: sess.userData.name,
-                message: `Computer will be restarted in 5 minutes`,
+            return gotoHome(req, res, {
+                message: `Computer will be restarted in 5 minutes!`,
             });
         }).catch(err => {
             console.log(err);
-            res.render("home", {
-                name: sess.userData.name,
-                message: `Fail to restart computer`,
+            return gotoHome(req, res, {
+                message: `Fail to restart computer!`,
             });
         });
 
     }).catch(err => {
         console.log(err);
-        res.render("home", {
-            name: sess.userData.name,
-            message: `Fail to restart computer`,
+        return gotoHome(req, res, {
+            message: `Fail to restart computer!`,
         });
     });
 });
@@ -254,10 +250,11 @@ router.post("/cleanflag", (req, res) => {
 
     let sess = req.session;
     const access_token = sess.accessToken;
-    if (!access_token) res.send("Please login first");
+    if (!validateRest(req, res)) return;
+
     axios({
         method: "get",
-        url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controler}`,
+        url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controller}`,
         headers: {
             Authorization: "token " + access_token,
         },
@@ -269,7 +266,7 @@ router.post("/cleanflag", (req, res) => {
 
         axios({
             method: "put",
-            url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controler}`,
+            url: `https://api.github.com/repos/${sess.userData.login}/${reposName}/contents/${controller}`,
             // Set the content type header, so that we get the response in JSON
             headers: {
                 accept: "application/json",
@@ -281,25 +278,44 @@ router.post("/cleanflag", (req, res) => {
                 "sha": fileData.sha,
             },
         }).then((updateRes) => {
-            res.render("home", {
-                name: sess.userData.name,
+            return gotoHome(req, res, {
                 message: `Flag cleaned, no more action needed!`,
             });
         }).catch(err => {
             console.log(err);
-            res.render("home", {
-                name: sess.userData.name,
-                message: `Fail to clean flag`,
+            return gotoHome(req, res, {
+                message: `Fail to clean flag!`,
             });
         });
 
     }).catch(err => {
         console.log(err);
-        res.render("home", {
-            name: sess.userData.name,
-            message: `Fail to clean flag`,
+        return gotoHome(req, res, {
+            message: `Fail to clean flag!`,
         });
     });
 });
+
+function gotoHome(req, res, opts) {
+    let sess = req.session;
+    
+    res.render("home", {
+        name: sess.userData.name,
+        login: sess.userData.login,
+        message: opts.message,
+        message1: opts.message1 || '',
+    });
+}
+
+function validateRest(req, res) {
+    let sess = req.session;
+    const access_token = sess.accessToken;
+    if (!access_token) {
+        res.render("index");
+        return false;
+    }
+
+    return true;
+}
 
 module.exports = router;

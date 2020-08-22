@@ -6,6 +6,14 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var session = require("express-session");
 
+if (process.env.MODE !== 'dev') {
+    require('../config/appconfig');
+} else {
+    require('../config/appconfig.local');
+}
+
+console.log(APPCONFIG);
+
 var routes = require('./routes/index');
 
 var app = express();
