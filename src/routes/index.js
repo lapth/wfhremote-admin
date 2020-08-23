@@ -14,7 +14,7 @@ router.get("/", function (req, res) {
 
 router.get("/home", (req, res) => {
 
-    console.log('Retrieving access token!');
+    log(req, 'Retrieving access token!');
 
     const cbCode = req.query.code;
     if (!cbCode) return res.render('index');
@@ -27,7 +27,7 @@ router.get("/home", (req, res) => {
         },
     }).then((response) => {
 
-        console.log('Retrieving user information!');
+        log(req, 'Retrieving user information!');
 
         const accessToken = response.data.access_token;
         let sess = req.session;
@@ -43,6 +43,7 @@ router.get("/home", (req, res) => {
         }).then((userRes) => {
             // Store user information
             sess.userData = userRes.data;
+            log(req, "Authenticated!");
             return gotoHome(req, res, {
                 message: `Have a good day!`,
             });
@@ -53,7 +54,7 @@ router.get("/home", (req, res) => {
 // Init the wfhremote repository as public repository
 router.post("/initrepos", (req, res) => {
 
-    console.log('Initializing repository!');
+    log(req, 'Initializing repository!');
 
     let sess = req.session;
     const access_token = sess.accessToken;
@@ -77,7 +78,7 @@ router.post("/initrepos", (req, res) => {
         },
     }).then((response) => {
 
-        console.log('Creating controller file!');
+        log(req, 'Created repository, creating controller file!');
 
         // Create the controller file
         axios({
@@ -93,18 +94,19 @@ router.post("/initrepos", (req, res) => {
                 "content": Buffer.from("0").toString('base64')
             },
         }).then((response) => {
+            log(req, 'Created controller file!');
             return gotoHome(req, res, {
                 message: `Initialized ${reposName} repository.`,
                 message1: `Please replace the the <git_account_Id> in <C:\\SyncVPNStatus.ps1> with your own: ${sess.userData.login}`,
             });
         }).catch(err => {
-            console.log(err);
+            log(req, err);
             return gotoHome(req, res, {
                 message: `Error during initializing ${reposName} repository!`,
             });
         });
     }).catch((err) => {
-        console.log(err);
+        log(req, err);
         return gotoHome(req, res, {
             message: `Error during initializing ${reposName} repository!`,
         });
@@ -113,7 +115,7 @@ router.post("/initrepos", (req, res) => {
 
 router.post("/delete", (req, res) => {
 
-    console.log('Deleting repository!');
+    log(req, 'Deleting repository!');
 
     let sess = req.session;
     const access_token = sess.accessToken;
@@ -127,11 +129,12 @@ router.post("/delete", (req, res) => {
             Authorization: "token " + access_token,
         },
     }).then((response) => {
+        log(req, 'Deleted repository!');
         return gotoHome(req, res, {
             message: `Deleted ${reposName} repository!`,
         });
     }).catch((err) => {
-        console.log(err);
+        log(req, err);
         return gotoHome(req, res, {
             message: `Can not delete ${reposName} repository!`,
         });
@@ -140,7 +143,7 @@ router.post("/delete", (req, res) => {
 
 router.post("/restart", (req, res) => {
 
-    console.log('Reading controler file!');
+    log(req, 'Reading controler file!');
 
     let sess = req.session;
     const access_token = sess.accessToken;
@@ -155,7 +158,7 @@ router.post("/restart", (req, res) => {
         },
     }).then(response => {
 
-        console.log('Updating controler to 1!');
+        log(req, 'Updating controler to 1!');
 
         const fileData = response.data;
 
@@ -173,18 +176,19 @@ router.post("/restart", (req, res) => {
                 "sha": fileData.sha,
             },
         }).then((updateRes) => {
+            log(req, 'Updated controler to 1!');
             return gotoHome(req, res, {
                 message: `Network will be restarted after 5 minutes!`,
             });
         }).catch(err => {
-            console.log(err);
+            log(req, err);
             return gotoHome(req, res, {
                 message: `Fail to restart network!`,
             });
         });
 
     }).catch(err => {
-        console.log(err);
+        log(req, err);
         return gotoHome(req, res, {
             message: `Fail to restart network!`,
         });
@@ -193,7 +197,7 @@ router.post("/restart", (req, res) => {
 
 router.post("/restartpc", (req, res) => {
 
-    console.log('Restarting Computer!');
+    log(req, 'Restarting Computer!');
 
     let sess = req.session;
     const access_token = sess.accessToken;
@@ -208,7 +212,7 @@ router.post("/restartpc", (req, res) => {
         },
     }).then(response => {
 
-        console.log('Updating controler to 2!');
+        log(req, 'Updating controler to 2!');
 
         const fileData = response.data;
 
@@ -226,18 +230,19 @@ router.post("/restartpc", (req, res) => {
                 "sha": fileData.sha,
             },
         }).then((updateRes) => {
+            log(req, 'Updated controler to 2!');
             return gotoHome(req, res, {
                 message: `Computer will be restarted in 5 minutes!`,
             });
         }).catch(err => {
-            console.log(err);
+            log(req, err);
             return gotoHome(req, res, {
                 message: `Fail to restart computer!`,
             });
         });
 
     }).catch(err => {
-        console.log(err);
+        log(req, err);
         return gotoHome(req, res, {
             message: `Fail to restart computer!`,
         });
@@ -246,7 +251,7 @@ router.post("/restartpc", (req, res) => {
 
 router.post("/cleanflag", (req, res) => {
 
-    console.log('Cleaning controler file!');
+    log(req, 'Cleaning controler file!');
 
     let sess = req.session;
     const access_token = sess.accessToken;
@@ -260,7 +265,7 @@ router.post("/cleanflag", (req, res) => {
         },
     }).then(response => {
 
-        console.log('Updating controler to 0!');
+        log(req, 'Updating controler to 0!');
 
         const fileData = response.data;
 
@@ -278,18 +283,19 @@ router.post("/cleanflag", (req, res) => {
                 "sha": fileData.sha,
             },
         }).then((updateRes) => {
+            log(req, 'Updated controler to 0!');
             return gotoHome(req, res, {
                 message: `Flag cleaned, no more action needed!`,
             });
         }).catch(err => {
-            console.log(err);
+            log(req, err);
             return gotoHome(req, res, {
                 message: `Fail to clean flag!`,
             });
         });
 
     }).catch(err => {
-        console.log(err);
+        log(req, err);
         return gotoHome(req, res, {
             message: `Fail to clean flag!`,
         });
@@ -316,6 +322,12 @@ function validateRest(req, res) {
     }
 
     return true;
+}
+
+function log(req, ...msgs) {
+    let sess = req.session;
+    const loginId = sess.userData ? sess.userData.login : 'Anonymous';
+    console.log(loginId, ':', ...msgs);
 }
 
 module.exports = router;
