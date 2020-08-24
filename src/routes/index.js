@@ -9,7 +9,7 @@ const controller = APPCONFIG.controller;
 
 /* GET home page. */
 router.get("/", function (req, res) {
-  res.render("index");
+  res.render("index", { clientID: clientID });
 });
 
 router.get("/home", (req, res) => {
